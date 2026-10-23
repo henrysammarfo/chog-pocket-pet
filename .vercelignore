@@ -1,0 +1,11 @@
+node_modules
+.next
+/lib
+cache
+out
+broadcast
+test-results
+playwright-report
+coverage
+.git
+agent-tools
