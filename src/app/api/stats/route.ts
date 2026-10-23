@@ -8,7 +8,7 @@ const NFT = "0xc96d31F8626c6D03Fae5dCD3d61e3FB9F4a73763" as const;
 const CHOG = "0x350035555E10d9AfAF1566AaebfCeD5BA6C27777" as const;
 const DEPLOY_BLOCK = BigInt(115892488);
 const STEP = BigInt(100);
-const RPCS = ["https://rpc-mainnet.monadinfra.com", "https://rpc1.monad.xyz"];
+const RPCS = ["https://rpc1.monad.xyz", "https://rpc-mainnet.monadinfra.com", "https://rpc2.monad.xyz", "https://rpc3.monad.xyz"];
 
 const fed = parseAbiItem("event Fed(address indexed owner, uint256 indexed tokenId, uint256 amount, uint32 streak, uint64 day)");
 const withdrawn = parseAbiItem("event Withdrawn(address indexed owner, uint256 amount, uint256 remaining)");
@@ -21,7 +21,7 @@ const cache: { scanned: bigint; pockets: Map<string, Pocket>; at: number; body?:
 };
 
 function client(i = 0) {
-  return createPublicClient({ chain: monad, transport: http(RPCS[i % RPCS.length]) });
+  return createPublicClient({ chain: monad, transport: http(RPCS[i % RPCS.length], { retryCount: 5, retryDelay: 400 }) });
 }
 
 async function scan(head: bigint) {
@@ -30,8 +30,8 @@ async function scan(head: bigint) {
     const to = from + STEP - BigInt(1) > head ? head : from + STEP - BigInt(1);
     ranges.push([from, to]);
   }
-  for (let i = 0; i < ranges.length; i += 25) {
-    const batch = ranges.slice(i, i + 25);
+  for (let i = 0; i < ranges.length; i += 8) {
+    const batch = ranges.slice(i, i + 8);
     const results = await Promise.all(
       batch.map(([fromBlock, toBlock], k) =>
         client(k).getLogs({ address: JAR, events: [fed, withdrawn], fromBlock, toBlock }),
