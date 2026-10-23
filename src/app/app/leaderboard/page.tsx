@@ -1,112 +1,95 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PageFrame, PageHero } from "@/components/app/page-hero";
-import { usePocket } from "@/components/app/use-pocket";
-import { wholeChog } from "@/lib/format";
-import { buildBoard, type BoardRow } from "@/lib/leaderboard";
-import { shareTokenNumber } from "@/lib/share-card";
 
-function Row({ row, hint }: { row: BoardRow; hint: string }) {
+type Pocket = { owner: string; tokenId: number; saved: string; fed: string; streak: number; feeds: number; lastDay: number };
+type Stats = { live: boolean; block?: string; totalFed?: string; jarBalance?: string; feeders?: number; feeds?: number; pockets?: Pocket[] };
+type Score = { player: string; label: string; game: string; score: number; at: number };
+
+const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const whole = (v: string) => Math.floor(Number(v)).toLocaleString("en-US");
+const heading = { fontFamily: "var(--font-anton), sans-serif" };
+
+function Section({ title, testid, children }: { title: string; testid: string; children: React.ReactNode }) {
   return (
-    <li className="flex items-center justify-between gap-3 border-t border-white/10 py-3 first:border-t-0">
-      <div>
-        <p className="font-anton text-lg uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-          {row.name}
-        </p>
-        <p className="text-xs text-[#EFF4FF]/60">{hint}</p>
-      </div>
-      <p className="text-right text-sm">
-        <span className="block font-anton text-[#6FFF00]">{row.streak}d</span>
-        <span className="text-[#EFF4FF]/70">{wholeChog(row.jar)}</span>
-      </p>
-    </li>
+    <section className="rounded-2xl border border-white/10 bg-white/5 p-5" data-testid={testid}>
+      <h2 className="font-anton text-2xl uppercase" style={heading}>{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
 
+function Empty({ text }: { text: string }) {
+  return <p className="text-sm text-[#EFF4FF]/70">{text}</p>;
+}
+
 export default function LeaderboardPage() {
-  const { demo, pet, memory, today } = usePocket();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [scores, setScores] = useState<{ live: boolean; entries: Score[] } | null>(null);
 
-  if (!demo.ready) {
-    return <p className="p-6 font-anton text-2xl uppercase">Opening the pocket…</p>;
-  }
+  useEffect(() => {
+    let on = true;
+    const load = () => {
+      fetch("/api/stats", { cache: "no-store" }).then((r) => r.json()).then((s) => on && setStats(s)).catch(() => on && setStats({ live: false }));
+      fetch("/api/scores", { cache: "no-store" }).then((r) => r.json()).then((s) => on && setScores(s)).catch(() => on && setScores({ live: false, entries: [] }));
+    };
+    load();
+    const t = setInterval(load, 30_000);
+    return () => { on = false; clearInterval(t); };
+  }, []);
 
-  const extra: BoardRow[] =
-    memory.streak > 0 || BigInt(memory.jarTotal) > 0n || (memory.arcadeTotal ?? 0) > 0
-      ? [
-          {
-            tokenId: shareTokenNumber(pet.id, pet.tokenId),
-            name: pet.tokenId != null ? `Chog #${pet.tokenId}` : pet.name,
-            streak: memory.streak,
-            jar: BigInt(memory.jarTotal),
-            lastFeedDay: demo.state.lastFeedDay || today,
-            arcade: memory.arcadeTotal ?? 0,
-          },
-        ]
-      : [];
-  const board = buildBoard(today, extra);
-  const mine = extra[0];
-  const arcadeRows =
-    mine && !board.arcade.some((row) => row.tokenId === mine.tokenId) ? [...board.arcade, mine] : board.arcade;
+  const pockets = stats?.pockets ?? [];
+  const byStreak = [...pockets].sort((a, b) => b.streak - a.streak).slice(0, 10);
+  const byJar = [...pockets].sort((a, b) => Number(b.saved) - Number(a.saved)).slice(0, 10);
+  const top = scores?.entries.slice(0, 15) ?? [];
 
   return (
     <PageFrame>
       <PageHero
-        petName={pet.name}
-        imageUrl={pet.imageUrl}
-        word="RANK"
-        kicker="who kept the habit"
-        title="Leaderboard"
-        lede="Longest streaks, fullest jars, and the Chogs that miss tomorrow if today stays quiet. The board mixes the demo field with the Chog on this phone."
+        petName="Chog"
+        word="Board"
+        kicker="Leaderboard"
+        title="Who is keeping their Chog fed"
+        lede="Streaks and jars come straight from the jar contract on Monad. Arcade scores are saved on our server. Nothing here is made up."
       />
-      <section className="grid items-start gap-4 lg:grid-cols-3">
-        <article className="liquid-glass rounded-[var(--radius-24)] p-6" data-testid="board-streak">
-          <h2 className="font-anton text-2xl uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-            Longest streak
-          </h2>
-          <ol className="mt-3">
-            {board.longest.map((row) => (
-              <Row key={row.tokenId} row={row} hint={`${row.streak} mornings in a row`} />
-            ))}
-          </ol>
-        </article>
-        <article className="liquid-glass rounded-[var(--radius-24)] p-6" data-testid="board-jar">
-          <h2 className="font-anton text-2xl uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-            Biggest jar
-          </h2>
-          <ol className="mt-3">
-            {board.biggest.map((row) => (
-              <Row key={row.tokenId} row={row} hint="Set aside in this Chog's name" />
-            ))}
-          </ol>
-        </article>
-        <article className="liquid-glass rounded-[var(--radius-24)] p-6" data-testid="board-risk">
-          <h2 className="font-anton text-2xl uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-            About to break
-          </h2>
-          <p className="mt-2 text-sm text-[#EFF4FF]/70">Set aside yesterday, not yet today. One quiet morning ends the run.</p>
-          <ol className="mt-3">
-            {board.atRisk.map((row) => (
-              <Row key={row.tokenId} row={row} hint="Needs a set-aside today" />
-            ))}
-          </ol>
-        </article>
-      </section>
-      <article className="liquid-glass rounded-[var(--radius-24)] p-6" data-testid="board-arcade">
-        <h2 className="font-anton text-2xl uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-          Arcade scores
-        </h2>
-        <p className="mt-2 text-sm text-[#EFF4FF]/70">Points from the six games, kept on the Chog.</p>
-        <ol className="mt-3">
-          {arcadeRows.map((row) => (
-            <li key={row.tokenId} className="flex items-center justify-between gap-3 border-t border-white/10 py-3 first:border-t-0">
-              <p className="font-anton text-lg uppercase" style={{ fontFamily: "var(--font-anton), sans-serif" }}>
-                {row.name}
-              </p>
-              <p className="font-anton text-[#6FFF00]">{row.arcade ?? 0}</p>
-            </li>
-          ))}
-        </ol>
-      </article>
+      <div className="mt-6 grid gap-4 md:grid-cols-3" data-testid="board-totals">
+        {[
+          ["Saved in the jar", stats?.live ? `${whole(stats.jarBalance ?? "0")} $CHOG` : "—"],
+          ["Feeders", stats?.live ? String(stats.feeders ?? 0) : "—"],
+          ["Feeds on-chain", stats?.live ? String(stats.feeds ?? 0) : "—"],
+        ].map(([k, v]) => (
+          <div key={k} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase text-[#EFF4FF]/60">{k}</p>
+            <p className="font-anton text-3xl text-[#6FFF00]" style={heading}>{stats ? v : "…"}</p>
+          </div>
+        ))}
+      </div>
+      {stats && !stats.live ? <p className="mt-3 text-sm text-[#FF8EE4]">Monad RPC did not answer. Retrying every 30 seconds.</p> : null}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <Section title="Longest streaks" testid="board-streak">
+          {!stats ? <Empty text="Reading the chain…" /> : byStreak.length === 0 ? <Empty text="No one has fed the jar yet. Be the first." /> : (
+            <ol>{byStreak.map((p) => (
+              <li key={p.owner} className="flex justify-between border-t border-white/10 py-2 first:border-t-0">
+                <span>Chog #{p.tokenId} · {short(p.owner)}</span><span className="font-anton text-[#6FFF00]">{p.streak}d</span>
+              </li>))}</ol>)}
+        </Section>
+        <Section title="Biggest jars" testid="board-jar">
+          {!stats ? <Empty text="Reading the chain…" /> : byJar.length === 0 ? <Empty text="No $CHOG saved yet. Be the first." /> : (
+            <ol>{byJar.map((p) => (
+              <li key={p.owner} className="flex justify-between border-t border-white/10 py-2 first:border-t-0">
+                <span>Chog #{p.tokenId} · {short(p.owner)}</span><span className="font-anton text-[#6FFF00]">{whole(p.saved)} $CHOG</span>
+              </li>))}</ol>)}
+        </Section>
+        <Section title="Arcade high scores" testid="board-arcade">
+          {!scores ? <Empty text="Loading scores…" /> : top.length === 0 ? <Empty text="No scores yet. Play a game and be the first." /> : (
+            <ol>{top.map((s) => (
+              <li key={`${s.player}-${s.game}`} className="flex justify-between border-t border-white/10 py-2 first:border-t-0">
+                <span>{s.label} · {s.game}</span><span className="font-anton text-[#6FFF00]">{s.score.toLocaleString("en-US")}</span>
+              </li>))}</ol>)}
+        </Section>
+      </div>
+      {stats?.block ? <p className="mt-4 text-xs text-[#EFF4FF]/50">Read at Monad block {stats.block}.</p> : null}
     </PageFrame>
   );
 }

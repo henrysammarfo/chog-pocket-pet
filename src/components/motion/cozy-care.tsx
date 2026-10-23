@@ -1,5 +1,6 @@
 "use client";
 
+import { useLiveStats } from "@/lib/use-live-stats";
 import { ArrowRight, ArrowUpRight, Play, Plus, Star } from "lucide-react";
 import Link from "next/link";
 
@@ -13,6 +14,10 @@ const INK = "#1a3d1a";
 const ORANGE = "#E86A10";
 
 export function CozyCare() {
+  const stats = useLiveStats();
+  const supplyText = stats?.genesisSupply != null ? stats.genesisSupply.toLocaleString("en-US") : "…";
+  const jarText = stats?.live ? `${Math.floor(Number(stats.jarBalance ?? 0)).toLocaleString("en-US")} $CHOG saved` : "Live jar";
+  const feedersText = stats?.live ? `${stats.feeders ?? 0} feeders` : "…";
   return (
     <div
       data-testid="cozy-care"
@@ -51,7 +56,7 @@ export function CozyCare() {
               </span>
             </div>
             <p className="mt-2 text-gray-700" style={{ fontSize: "clamp(14px, 1.1vw, 18px)" }}>Coin jar</p>
-            <p className="font-bold" style={{ color: INK }}>50 $CHOG</p>
+            <p className="font-bold" style={{ color: INK }}>{jarText}</p>
           </Link>
           <div
             className="animate-slide-in-right delay-700 absolute top-[50px] right-12"
@@ -80,7 +85,7 @@ export function CozyCare() {
               <img src="/care/care-jar.jpg" alt="" className="h-full w-full object-cover" />
             </div>
             <p className="mt-1 text-sm">Coin jar</p>
-            <p className="text-sm font-bold">50 $CHOG</p>
+            <p className="text-sm font-bold">{jarText}</p>
           </Link>
           <div className="absolute top-[80px] right-4 w-[120px]">
             <div className="overflow-hidden rounded-2xl" style={{ aspectRatio: "3 / 4" }}>
@@ -114,7 +119,7 @@ export function CozyCare() {
                 <img src="/care/care-jar.jpg" alt="Coin jar" className="h-full w-full object-cover" />
               </div>
               <p className="mt-1 text-sm text-gray-700">Coin jar</p>
-              <p className="text-sm font-bold">50 $CHOG</p>
+              <p className="text-sm font-bold">{jarText}</p>
             </div>
             <div className="flex-1">
               <div className="overflow-hidden rounded-2xl" style={{ aspectRatio: "3 / 4" }}>
@@ -125,16 +130,12 @@ export function CozyCare() {
           </div>
           <div className="mt-3 flex items-center justify-between text-sm font-semibold">
             <span className="inline-flex items-center gap-2">
-              1,969
+              {supplyText}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/care/care-avatar.jpg" alt="" className="h-6 w-6 rounded-full object-cover" />
               <Link href="/collection" aria-label="See the collection" className="grid h-6 w-6 place-items-center rounded-full text-white" style={{ background: INK }}>
                 <Plus size={12} />
               </Link>
-            </span>
-            <span className="h-6 w-px bg-black/10" />
-            <span className="inline-flex items-center gap-1">
-              7 <Star size={14} fill={ORANGE} color={ORANGE} />
             </span>
           </div>
         </div>
@@ -144,7 +145,7 @@ export function CozyCare() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/care/care-left.jpg" alt="Four Chogs together" className="block h-auto w-full" />
             <div className="pointer-events-auto absolute left-6 flex items-center gap-2 text-white" style={{ bottom: "clamp(20px, 4vh, 50px)" }}>
-              <p className="text-3xl font-semibold">1,969</p>
+              <p className="text-3xl font-semibold">{supplyText}</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/care/care-avatar.jpg" alt="" className="h-8 w-8 rounded-full object-cover" />
               <Link href="/collection" aria-label="See the collection" className="grid h-8 w-8 place-items-center rounded-full" style={{ background: INK }}>
@@ -166,7 +167,7 @@ export function CozyCare() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/care/care-right.jpg" alt="A Chog celebrating a coin" className="block h-auto w-full" />
             <p className="absolute right-6 inline-flex items-center gap-1 text-3xl font-semibold text-white" style={{ bottom: "clamp(20px, 4vh, 50px)" }}>
-              7 <Star size={22} fill={ORANGE} color={ORANGE} />
+              {feedersText} <Star size={22} fill={ORANGE} color={ORANGE} />
             </p>
           </div>
         </div>

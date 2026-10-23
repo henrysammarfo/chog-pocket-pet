@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { useAccount } from "wagmi";
+import { submitScore } from "@/lib/score-submit";
 import { Coin2048Game } from "@/components/arcade/coin2048-game";
 import { DashGame } from "@/components/arcade/dash-game";
 import { FloppyGame } from "@/components/arcade/floppy-game";
@@ -21,6 +23,7 @@ export function ArcadePlay({ id }: { id: string }) {
   const wallet = useWalletChogs();
   const [banked, setBanked] = useState<PetMemory | null>(null);
   const sent = useRef(0);
+  const { address } = useAccount();
 
   if (!game) {
     return (
@@ -57,6 +60,7 @@ export function ArcadePlay({ id }: { id: string }) {
       at: Date.now(),
     });
     setBanked(next);
+    submitScore(current.id, total, address, pet.name);
   }
 
   return (
