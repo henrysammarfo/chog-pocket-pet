@@ -72,7 +72,7 @@ function FeedButtonInner({
     }
     const account = connection.address;
     const tokenId = pet.tokenId;
-    if (tokenId == null) return;
+    if (tokenId == null || !account) return;
     const jar = jarAddress();
     setBlock(null);
     setBusy("Checking your Chog and $CHOG…");

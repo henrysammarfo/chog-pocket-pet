@@ -29,7 +29,7 @@ export function dashJumpClears(kind: DashKind, speed: number, lead: number): boo
   const obs = dashObstacle(kind);
   let obsX = DASH.playerX + DASH.playerW + lead;
   let y = dashRestTop();
-  let vy = DASH.jumpVy;
+  let vy: number = DASH.jumpVy;
   const dt = 16;
   for (let t = 0; t < 5000; t += dt) {
     const step = dt / 1000;

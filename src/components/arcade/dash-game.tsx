@@ -47,7 +47,7 @@ export function DashGame({ figure, boost, onScore }: { figure: string; boost: bo
       { x: 520, y: 140 },
       { x: 860, y: 60 },
     ];
-    let speed = DASH.startSpeed;
+    let speed: number = DASH.startSpeed;
     let reported = 0;
     let blink = 0;
     let frame = 0;
